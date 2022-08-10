@@ -58,7 +58,7 @@ class AwsS3 {
 
     final policy = Policy.fromS3PresignedPost(
         uploadKey, bucket, accessKey, 15, length, acl,
-        region: region);
+        region: region, token: token);
     final signingKey =
         SigV4.calculateSigningKey(secretKey, policy.datetime, region, 's3');
     final signature = SigV4.calculateSignature(signingKey, policy.encode());

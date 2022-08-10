@@ -13,14 +13,15 @@ class Policy {
   String credential;
   String datetime;
   int maxFileSize;
+  String? token;
 
   Policy(this.key, this.bucket, this.datetime, this.expiration, this.credential,
       this.maxFileSize, this.acl,
-      {this.region = 'us-east-2'});
+      {this.region = 'us-east-2', this.token});
 
   factory Policy.fromS3PresignedPost(String key, String bucket,
       String accessKeyId, int expiryMinutes, int maxFileSize, ACL acl,
-      {String region = 'us-east-2'}) {
+      {String region = 'us-east-2', String? token}) {
     final datetime = SigV4.generateDatetime();
     final expiration = (DateTime.now())
         .add(Duration(minutes: expiryMinutes))
@@ -32,7 +33,7 @@ class Policy {
         '$accessKeyId/${SigV4.buildCredentialScope(datetime, region, 's3')}';
 
     return Policy(key, bucket, datetime, expiration, cred, maxFileSize, acl,
-        region: region);
+        region: region, token: token);
   }
 
   String encode() {
@@ -52,6 +53,7 @@ class Policy {
     {"x-amz-credential": "${this.credential}"},
     {"x-amz-algorithm": "AWS4-HMAC-SHA256"},
     {"x-amz-date": "${this.datetime}" }
+    ${this.token != null ? ',{"x-amz-security-token": "${this.token}" }' : ''}
   ]
 }
 ''';
