@@ -25,9 +25,12 @@ class AwsS3 {
 
     /// The file to upload
     required File file,
-    
+
     /// The key to save this file as. Will override destDir and filename if set.
     String? key,
+
+    /// The security token from AWS STS. If you are using temporary security credentials, this is required
+    String? token,
 
     /// The path to upload the file to (e.g. "uploads/public"). Defaults to the root "directory"
     String destDir = '',
@@ -50,10 +53,14 @@ class AwsS3 {
 
     final uri = Uri.parse(endpoint);
     final req = http.MultipartRequest("POST", uri);
-    final multipartFile = http.MultipartFile('file', stream, length, filename: path.basename(file.path));
+    final multipartFile = http.MultipartFile('file', stream, length,
+        filename: path.basename(file.path));
 
-    final policy = Policy.fromS3PresignedPost(uploadKey, bucket, accessKey, 15, length, acl, region: region);
-    final signingKey = SigV4.calculateSigningKey(secretKey, policy.datetime, region, 's3');
+    final policy = Policy.fromS3PresignedPost(
+        uploadKey, bucket, accessKey, 15, length, acl,
+        region: region);
+    final signingKey =
+        SigV4.calculateSigningKey(secretKey, policy.datetime, region, 's3');
     final signature = SigV4.calculateSignature(signingKey, policy.encode());
 
     req.files.add(multipartFile);
@@ -65,6 +72,10 @@ class AwsS3 {
     req.fields['Policy'] = policy.encode();
     req.fields['X-Amz-Signature'] = signature;
 
+    if (token != null) {
+      req.fields['X-Amz-Security-Token'] = token;
+    }
+
     try {
       final res = await req.send();
 
@@ -74,5 +85,6 @@ class AwsS3 {
       print(e);
       return null;
     }
+    return null;
   }
 }
